@@ -1,0 +1,68 @@
+---
+title: Assignment 3
+author: Alex Moyse
+output: html_document
+---
+
+<H1> Part 1
+<H2> Let's first start with loading libraries
+
+```{r}
+library(dplyr)
+```
+
+<h2> Once there, lets grab our raw data and import it into a dataframe with headers
+
+```{r}
+url.data <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/majors-list.csv"
+
+raw <- read.csv(url(url.data), header = TRUE,)
+```
+
+<h2> Let's take a quick head of the data, and see what it looks like with headers
+
+```{r}
+
+head(raw)
+
+```
+<H2> Now let's filter!
+
+<H3> We will now use grep to find things in the Majors column 
+```{r}
+majors<-rbind(raw[grepl("STATISTICS", raw$Major),], raw[grepl("DATA", raw$Major),])
+
+head(majors)
+```
+
+
+<h1> Part 2
+<H3> Let's start with grabbing Tidyverse, there will be conflits but that's outside of scope.
+```{r}
+library(tidyverse)
+```
+
+<H3> From there, let's grab our text file from in folder, and read it into a dataframe with a set deliminator. 
+
+
+<H3>Looking at the character ", and then look for patterns. Clearly every even column has a valid entry. Proceed to filter the rows with only complete cases, IE not nulls, and then proceed to add them into the list. In this case we will have to ignore a parsing issue, due to the /r in the file. 
+
+```{r}
+file <- "Assignment_2_Text.txt"
+df <- read_delim(file, delim='\"', col_names=FALSE, show_col_types = FALSE) 
+list <- df$X2[complete.cases(df$X2)]
+list <- (c(list, df$X4[complete.cases(df$X4)]))
+list <- (c(list, df$X6[complete.cases(df$X6)]))
+list <- (c(list, df$X8[complete.cases(df$X8)]))
+print(sort(list))
+```
+```{r}
+str <- c("ZOOZ","YAML","SadadaS","TOY","MOM")  
+pattern <- "(..)\1"
+str_subset(str, pattern)
+```
+<H2> Part 3
+
+Please see the word document here:
+
+

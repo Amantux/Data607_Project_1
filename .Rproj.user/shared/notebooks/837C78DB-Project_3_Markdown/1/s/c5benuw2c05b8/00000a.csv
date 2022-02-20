@@ -1,0 +1,5 @@
+"0","str <- c(""ZOOZ"",""YAML"",""SadadaS"",""TOY"",""MOM"")  "
+"0","pattern <- ""(..)\1"""
+"0","str_subset(str, pattern)"
+"1","character(0)
+"

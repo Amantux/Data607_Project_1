@@ -3,7 +3,7 @@
     "path": "~/GitHub/Project_1/Project_1 Markdown.Rmd",
     "project_path": "Project_1 Markdown.Rmd",
     "type": "r_markdown",
-    "hash": "1115260006",
+    "hash": "0",
     "contents": "",
     "dirty": false,
     "created": 1645061589833.0,
@@ -14,15 +14,15 @@
         "chunk_output_type": "inline",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "32,3",
-        "scrollLine": "24"
+        "cursorPosition": "52,34",
+        "scrollLine": "47"
     },
     "folds": "",
-    "lastKnownWriteTime": 1645105417,
+    "lastKnownWriteTime": 1645207571,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1645105417985,
+    "last_content_update": 1645207571617,
     "read_only": false,
     "read_only_alternatives": []
 }

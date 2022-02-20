@@ -1,0 +1,69 @@
+---
+title: "Alex Moyse-Assignment 3"
+output: html_notebook
+---
+
+<H1> Part 1
+<H2> Let's first start with loading libraries
+
+```{r}
+library(dplyr)
+```
+
+<h2> Once there, lets grab our raw data and import it into a dataframe with headers
+
+```{r}
+url.data <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/majors-list.csv"
+
+raw <- read.csv(url(url.data), header = TRUE,)
+```
+
+<h2> Let's take a quick head of the data, and see what it looks like with headers
+
+```{r}
+
+head(raw)
+
+```
+<H2> Now let's filter!
+
+<H3> 
+```{r}
+majors<-rbind(raw[grepl("STATISTICS", raw$Major),], raw[grepl("DATA", raw$Major),])
+
+head(majors)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r}
+library(tidyverse)
+```
+
+```{r}
+file <- "Assignment_2_Text.txt"
+df <- read_delim(file, delim='"', col_names=FALSE) 
+list <- c(df$X2) 
+list <- (c(list, df$X4))
+list <- (c(list, df$X6))
+list <- (c(list, df$X8))
+print(list)
+
+
+```
+```{r}
+produce='[1] "bell pepper"  "bilberry"     "blackberry"   "blood orange"
+
+[5] "blueberry"    "cantaloupe"   "chili pepper" "cloudberry"  
+
+[9] "elderberry"   "lime"         "lychee"       "mulberry"    
+
+[13] "olive"        "salal berry"'
+
+patrn="([a-z]+.[a-z]+)"
+unlist(str_extract_all(produce,pattern = patrn))
+```
+

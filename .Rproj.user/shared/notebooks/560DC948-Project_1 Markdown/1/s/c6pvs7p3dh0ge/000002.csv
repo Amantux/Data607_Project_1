@@ -1,0 +1,5 @@
+"0","Player_data <- separate(result[row_odd == 0,], 2, c(""Player_ID"", ""Post Ranking""), sep = '->')"
+"0","Player_data <- separate(Player_data, 2, c(""Player_ID"", ""Pre Ranking""), sep = ' / R: ')"
+"0","Player_Demo <- result[row_odd != 0,]"
+"0","Player_Demo$Player_ID <- Player_data$Player_ID"
+"0","head(Player_Demo)"

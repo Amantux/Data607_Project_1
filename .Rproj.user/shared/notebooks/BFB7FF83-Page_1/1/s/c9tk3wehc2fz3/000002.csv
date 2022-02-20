@@ -1,0 +1,3 @@
+"0","majors<-rbind(raw[grepl(""STATISTICS"", raw$Major),], raw[grepl(""DATA"", raw$Major),])"
+"0",""
+"0","head(majors)"
