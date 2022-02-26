@@ -1,18 +1,25 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: Project 1
+author: Alex Moyse
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+<H1>The library load in </H1>
 
 ```{r}
 library(tidyverse)
 library(RMariaDB)
 library(DBI)
 ```
-Looking at the data so far, its clear to me that it is a fixed width delimination
+
+<H2> Data Exploration </H2>
+
+
+Looking at the data so far, its clear to me that it is a fixed width deliminated. However, I decided not to take the time to fully flesh out every pattern, so I decided to simply handle post processing. 
 
 Each datum is made up of two rows
 
@@ -20,7 +27,10 @@ the first row is:
 Number | Name | Total Points | Score
 
 The second row is
-Location | UUID | Rating Start -> Rating Endsl
+Location | UUID | Rating Start -> Rating End
+
+So we will read in our data at this point, taking into account the alternating pattern described above. In addition, we will need to remove the various headers as they are unused.
+
 
 
 ```{r}
@@ -36,31 +46,166 @@ for (i in 4:(length(line))){
 }
 non_null_names <- which(!sapply(test, is.null))
 result = read_delim(paste(test[non_null_names], collapse = "\n"), delim='|', col_names=FALSE)
-#result = read_delim(paste(line, collapse = "\n"), delim='|')
-print(result)
+result
 close(conn)
 ```
+
+Looking at the data above, it is clear that the pattern we discovered above read in properly. With the first read in complete, we're going to separate the two different data structures (each contained within one row). Now we are going to spread out the data, and examine the two created dataframes to see what post processing we need to do.
+
+
 ```{r}
 row_odd <- seq_len(nrow(result)) %% 2
-head(result[row_odd == 0,])
+result[row_odd == 0,]
 head(result[row_odd != 0,][2])
 ```
 
+<H1> Working with the split Datum</H1>
+
+First we are going to work on the dataframe associated to the odd rows, which contains the player ID, Pre_Ranking, Post_Ranking, and if they played white or black for a certain game. I opted to keep the data with the X[integer] flags as it clearly enables me to keep track of columns that I am currently manipulating.
+
+In terms of operations in ths step, we will split off Player_ID and Post_Ranking, using the '->' as a separator to search for. Next, we will split off Player_ID again with Pre_Ranking. At the end of this process, we have 3 columns, Player_Id, Post_Ranking, Pre_Ranking. 
+
+
+The next step is to add in a column where we can merge this data to the other rows we've plucked from the dataset. Because we haven't adjusted the ordering of the rows in the dataframe, or removed rows, we can simply pull the Player_Ids from the Player_data Column, and add them to the Player_Demo Table.
 
 ```{r}
-Player_data <- separate(result[row_odd == 0,], 2, c("Player_ID", "Post Ranking"), sep = '->')
-Player_data <- separate(Player_data, 2, c("Player_ID", "Pre Ranking"), sep = ' / R: ')
+Player_data <- separate(result[row_odd == 0,], 2, c("Player_ID", "Post_Ranking"), sep = '->')
+Player_data <- separate(Player_data, 2, c("Player_ID", "Pre_Ranking"), sep = ' / R: ')
 Player_Demo <- result[row_odd != 0,]
 Player_Demo$Player_ID <- Player_data$Player_ID
-head(Player_Demo)
-head(Player_data)
+Player_Demo
+Player_data
 ```
+
+<H1> Ripping out Game Stats </H1>
+
+From there, we're going to remove the values associated to the round played, the player played, and if it is a win or loss. The main issue with this is the fact that this code is hard-coded to assume an up to 7 round system. If more rounds are played, it will not recognize them.  
+
 ```{r}
-head(merge(Player_data, Player_Demo, by="Player_ID"))
+Data_Finished <- merge(Player_data, Player_Demo, by="Player_ID")
+
+integer_data <- as.integer(unlist(str_extract_all(Data_Finished$Pre_Ranking, "^(\\d+)" )))
+ 
+#Data_Finished$Pre_Ranking <- as.integer(Data_Finished$Pre_Ranking)
+Data_Finished <- rename(Data_Finished, Person_id  = X1.y)
+Data_Finished <- separate(Data_Finished, X4.y, c("R1_Result", "R1_Player_id"))
+Data_Finished <- separate(Data_Finished, X5.y, c("R2_Result", "R2_Player_id"))
+Data_Finished <- separate(Data_Finished, X6.y, c("R3_Result", "R3_Player_id"))
+Data_Finished <- separate(Data_Finished, X7.y, c("R4_Result", "R4_Player_id"))
+Data_Finished <- separate(Data_Finished, X8.y, c("R5_Result", "R5_Player_id"))
+Data_Finished <- separate(Data_Finished, X9.y, c("R6_Result", "R6_Player_id"))
+Data_Finished <- separate(Data_Finished, X10.y, c("R7_Result", "R7_Player_id"))
+
+#Merges to make pretty names
+Data_Finished <- rename(Data_Finished,  Name = X2)
+Data_Finished <- rename(Data_Finished, Points = X3.y)
+Data_Finished <- rename(Data_Finished, State = X1.x)
+
+Data_Finished
+```
+<h1> Create Lookup table </H1>
+
+Now is the fun part of creating a look up table of Player's pre-ranking scores, to calculate the average score of each player's opponents. Due to the complexity of this, we're first going to hard code it for Gary Hua, player number 58.
+
+First things first, we're going to create a table containing the Person_id and the Pre_Ranking. Then, we're going to get a list of all the player's Gary Hua played. Then, we're going to get a vector of all of the values. From there, we need to recognize that not all items in the Pre-Ranking column are integers, as some are provisional ranks as indicated by the P. For the purposes of this exercise, I am assuming that all Provisional ranks shall be treated as valid to calculate the average.
+
+
+```{r}
+
+dfLookup <- Data_Finished[,c("Person_id","Pre_Ranking")]
+dfLookup <- dfLookup[order(dfLookup$Person_id),]
+dfLookup
+Iterated_list <- as.list(Data_Finished[1,c("R1_Player_id","R2_Player_id", "R3_Player_id", "R4_Player_id", "R5_Player_id", "R6_Player_id", "R7_Player_id")])
+total <- c()
+for (item in Iterated_list){
+  print(item)
+  print(dfLookup[as.integer(dfLookup$Person_id) == item, c("Pre_Ranking")])
+  total <- append(total, dfLookup[as.integer(dfLookup$Person_id) == item, c("Pre_Ranking")])
+}
+print((as.integer((str_extract_all(total, "^(\\d+)" )))))
+print(as.integer(mean(as.integer((str_extract_all(total, "^(\\d+)" ))))))
+```
+<H1> Let's Make the code modular </H1>
+First let's deal with the crud in the lookup table. We will have to regex the first number found in the cell, that way it will clear out the PXX if it is present. First, lets test that. Also spot check a few entries with different formatting needs just to ensure that it works as intended
+
+```{r}
+dfLookup <- Data_Finished[,c("Person_id","Pre_Ranking")]
+for (df_lookup_row in 1:NROW(dfLookup)){
+ print(dfLookup[df_lookup_row, "Person_id"])
+ value <- dfLookup[df_lookup_row, "Pre_Ranking"]
+ print(str_extract(value, "[:digit:]+"))
+}
+dfLookup
+```
+<H1> Final Augment </H1>
+
+Now that we have the code to clear the crud from that column, we will proceed to modularize the code, making it iterate through every row.  
+
+```{r}
+dfLookup <- Data_Finished[,c("Person_id","Pre_Ranking")]
+for (df_lookup_row in 1:NROW(dfLookup)){
+  
+}
+dfLookup <- dfLookup[order(dfLookup$Person_id),]
+Data_Finished$Opponent_Avg <- 0
+for (row_number in 1:NROW(Data_Finished)){
+  Iterated_list <- as.list(Data_Finished[row_number,c("R1_Player_id","R2_Player_id", "R3_Player_id", "R4_Player_id", "R5_Player_id", "R6_Player_id", "R7_Player_id")])
+  total <- c()
+  for (item in Iterated_list){
+    total <- append(total, str_extract(dfLookup[as.integer(dfLookup$Person_id) == item, c("Pre_Ranking")], "[:digit:]+"))
+  }
+  Data_Finished$Opponent_Avg[row_number] <- (as.integer(mean(as.integer(total), na.rm = TRUE)))
+}
+
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+And last but not least let's view the output:
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r}
+Data_Finished 
+
+
+```
+
+
+
+
+<H1> Finalizing the Data </H1>
+
+The preferred output is 'Gary Hua, ON, 6.0, 1794, 1605'
+So lets start structuring our data. We will make heavy use of the paste() function as it allows for easy stitching of data into the fileconnection.
+
+```{r}
+fileConn<-file("Data_Output.csv")
+writeLines(paste(str_trim(Data_Finished$Name, side = "both"), str_trim(Data_Finished$State, side = "both"), str_trim(Data_Finished$Points, side = "both"), str_trim(Data_Finished$Pre_Ranking, side = "both"),str_trim(Data_Finished$Opponent_Avg, side = "both"), sep = ', '), fileConn)
+close(fileConn)
+print(paste(str_trim(Data_Finished$Name, side = "both"), str_trim(Data_Finished$State, side = "both"), str_trim(Data_Finished$Points, side = "both"), str_trim(Data_Finished$Pre_Ranking, side = "both"),str_trim(Data_Finished$Opponent_Avg, side = "both"), sep = ', '))
+```
+
+<H1> The Conclusion </H1>
+
+All in all, I disliked this assignment's data set. I thought the structure of the chess score's set made it unusually miserable to work with, due to both the fixed width delimination and compound data per cell.
+
+Instead I would propose that the data collection & storage changes
+
+Ideally I would love to see a multi_database layout akin to
+
+Match_DB:
+
+Match_ID|Comp_1|Comp_2|Color_1|Color_2|Points_1|Points_2|Epoch_Date
+
+Where Comp_1 & Comp_2 in Player_DB$ID
+
+Player_DB:
+
+ID | State | NAME_ARRAY | Rank-Triggered updates from RANK_DB
+
+Rank_DB
+
+ID | Is_Provision | Provisional_Games | Rank | Epoch_Date 
+
+This would 100% simplify the process significantly as the structure would allow for significantly easier querying of the data, coupled with a higher degree of accuracy in terms of matches. In fact, you could calculate a real time score of each person simply based on augmentation of the tables. In addition, getting latest results is as simple as just grabbing the first result under each Epoch_Date. 
+
+All in all, this could simple be resolved by making easier structures, especially since storage is cheap.
+

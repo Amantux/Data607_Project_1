@@ -3,9 +3,9 @@
     "path": "~/GitHub/Assignment_3/Project_3_Markdown.Rmd",
     "project_path": null,
     "type": "r_markdown",
-    "hash": "0",
+    "hash": "1889184403",
     "contents": "",
-    "dirty": true,
+    "dirty": false,
     "created": 1645301149550.0,
     "source_on_save": true,
     "relative_order": 3,
@@ -18,11 +18,11 @@
         "chunk_output_type": "inline"
     },
     "folds": "",
-    "lastKnownWriteTime": 1645316046,
+    "lastKnownWriteTime": 1645316183,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1645316071033,
+    "last_content_update": 1645316183554,
     "read_only": false,
     "read_only_alternatives": []
 }
